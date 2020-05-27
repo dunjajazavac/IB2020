@@ -39,6 +39,7 @@ public class WriteMailClient extends MailClient {
 	private static final String keyStorePassForPrivateKeyA= "usera";
 	private static final String keyStorePassForPrivateKeyB= "userb";
 	private static KeyStoreReader keyStoreReader= new KeyStoreReader();
+	//private static MailBody mailBody= new MailBody();
 
 	
 	
