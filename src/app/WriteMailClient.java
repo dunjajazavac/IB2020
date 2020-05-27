@@ -3,17 +3,23 @@ package app;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.security.KeyStore;
+import java.security.PublicKey;
+import java.security.cert.Certificate;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.mail.internet.MimeMessage;
+import javax.net.ssl.KeyStoreBuilderParameters;
 
 import org.apache.xml.security.utils.JavaUtils;
 
 import com.google.api.services.gmail.Gmail;
 
+import model.keystore.KeyStoreReader;
+import model.mailclient.MailBody;
 import util.Base64;
 import util.GzipUtil;
 import util.IVHelper;
@@ -25,6 +31,17 @@ public class WriteMailClient extends MailClient {
 	private static final String KEY_FILE = "./data/session.key";
 	private static final String IV1_FILE = "./data/iv1.bin";
 	private static final String IV2_FILE = "./data/iv2.bin";
+	private static final String keyStoreFileA= ".data/usera.jks";
+	private static final String keyStoreFileB= ".data/userb.jks";
+	private static final String keyStorePassA= "usera";
+	private static final String keyStoreAAlias= "usera";
+	private static final String keyStoreBAlias= "userb";
+	private static final String keyStorePassForPrivateKeyA= "usera";
+	private static final String keyStorePassForPrivateKeyB= "userb";
+	private static KeyStoreReader keyStoreReader= new KeyStoreReader();
+
+	
+	
 	
 	public static void main(String[] args) {
 		
@@ -71,6 +88,22 @@ public class WriteMailClient extends MailClient {
 			String ciphersubjectStr = Base64.encodeToString(ciphersubject);
 			System.out.println("Kriptovan subject: " + ciphersubjectStr);
 			
+			//fajl i lozinka za pristup se prosledjuju
+			KeyStore ks= keyStoreReader.readKeyStore(keyStoreFileA, keyStorePassA.toCharArray());
+			
+			//za korisnika B uzimamo sertifikat i javni kljuc
+			Certificate cB= keyStoreReader.getCertificateFromKeyStore(ks,keyStoreBAlias);
+			PublicKey pkB= keyStoreReader.getPublicKeyFromCertificate(cB);
+			
+			//enkriptovanje session kljuca javnim kljucem od korisnika B
+			Cipher rsaChiperEnc= Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
+			
+			//enkripcija tajnim kljucem
+			rsaChiperEnc.init(Cipher.ENCRYPT_MODE, pkB);
+			
+			//kriptovanje
+			byte[] encodedSecretKey= rsaChiperEnc.doFinal(secretKey.getEncoded());
+			System.out.println("Kriptovani tajni kljuc: " + Base64.encodeToString(encodedSecretKey));
 			
 			//snimaju se bajtovi kljuca i IV.
 			JavaUtils.writeBytesToFilename(KEY_FILE, secretKey.getEncoded());
