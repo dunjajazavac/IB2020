@@ -55,6 +55,22 @@ public class KeyStoreReader {
 		return certificate;
 	}
 	
+	public PrivateKey getPrivateKeyFromKeyStore(KeyStore keyStore, String alias, char[] keyPass) {
+		PrivateKey privateKey = null;
+		try {
+			privateKey = (PrivateKey) keyStore.getKey(alias, keyPass);
+		} catch (UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		
+		if (privateKey == null) {
+			System.err.println("\n[KeyStoreReader - getPrivateKeyFromKeyStore] Privatni kljuc je null. Proveriti da li su ispravni alias i sifra za privatni kljuc!\n");
+		}
+		
+		return privateKey;
+	}
+	
+	
 	
 	
 	
