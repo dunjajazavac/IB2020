@@ -9,7 +9,9 @@ import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,15 +44,15 @@ public class ReadMailClient extends MailClient {
 	public static long PAGE_SIZE = 3;
 	public static boolean ONLY_FIRST_PAGE = true;
 	
-	private static final String KEY_FILE = "./data/session.key";
-	private static final String IV1_FILE = "./data/iv1.bin";
-	private static final String IV2_FILE = "./data/iv2.bin";
+//	private static final String KEY_FILE = "./data/session.key";
+//	private static final String IV1_FILE = "./data/iv1.bin";
+//	private static final String IV2_FILE = "./data/iv2.bin";
 	
 	public static KeyStoreReader keySoreReader= new KeyStoreReader();
 	private static final String keyStoreFile1="./data/userb.jks";
-	private static final String keyStorePassForPrivateKeyB= "userb";
-	private static final String keyStoreAliasB= "userb";
-	private static final String keyStorePassB= "userb";
+	private static final String keyStorePassForPrivateKeyB= "ilija";
+	private static final String keyStoreAliasB= "ilija";
+	private static final String keyStorePassB= "ilija";
 	
 	
 	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, MessagingException, NoSuchPaddingException, InvalidAlgorithmParameterException {
@@ -90,54 +92,54 @@ public class ReadMailClient extends MailClient {
 	    Integer answer = Integer.parseInt(answerStr);
 	    
 		MimeMessage chosenMessage = mimeMessages.get(answer);
-	   String content= chosenMessage.getContent().toString();
-	   String toCSV[]= content.split("\\s");
-	   System.out.println("\n csv \n:"+toCSV[1]);
-	   MailBody mailBody= new MailBody(toCSV[1]);
-	   byte [] encodedSecretKey= mailBody.getEncKeyBytes();
-	   
-	   System.out.println("\n secret key :\n"+ Base64.encodeToString(encodedSecretKey));
-	   
-	   //load keyStore
-	   KeyStore keyStore= keySoreReader.readKeyStore(keyStoreFile1, keyStorePassB.toCharArray());
-	   
-	   //loaded privateKey for use of description
-	   PrivateKey privateKey= keySoreReader.getPrivateKeyFromKeyStore(keyStore, keyStoreAliasB, keyStorePassForPrivateKeyB.toCharArray());
-	   System.out.println("\n Read private key\n"+ privateKey);
-	   
-	   //TODO: Decrypt a message and decompress it. The private key is stored in a file.
-	   Security.addProvider(new BouncyCastleProvider());
-	   Cipher rsaCipherDec= Cipher.getInstance("RSA/EBC/PKCS1Padding");
-	   rsaCipherDec.init(Cipher.DECRYPT_MODE, privateKey);
-	   
-	   byte[] key= rsaCipherDec.doFinal(encodedSecretKey);
-	   System.out.println("\nThis is the key\n"+key.toString());
-	   
-	   Cipher aesCipherDec= Cipher.getInstance("AES/CBC/PKCS5Padding");
-	   SecretKey secretKey= new SecretKeySpec(key, "AES");
-	   
-	   // initialization and decryption
-	    byte[] iv1 = JavaUtils.getBytesFromFile(IV1_FILE);
-		IvParameterSpec ivParameterSpec1 = new IvParameterSpec(iv1);
-		aesCipherDec.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec1);
+		String body= MailHelper.getText(chosenMessage);
 		
-		String str =toCSV[0];
-		byte[] bodyEnc = Base64.decode(str);
-		String receivedBodyTxt = new String(aesCipherDec.doFinal(bodyEnc));
-		String decompressedBodyText = GzipUtil.decompress(Base64.decode(receivedBodyTxt));
-		System.out.println("Body text: " + decompressedBodyText);
+		// mailBody object
+		MailBody mailBody= new MailBody(body);
 		
+		// take over vectors, encrypted key and body message
+		IvParameterSpec IV1= new IvParameterSpec(mailBody.getIV1Bytes());
+		IvParameterSpec IV2= new IvParameterSpec(mailBody.getIV2Bytes());
+		byte [] message= mailBody.getEncMessageBytes();
+		byte [] encSessionkey= mailBody.getEncKeyBytes();
 		
-		byte[] iv2 = JavaUtils.getBytesFromFile(IV2_FILE);
-		IvParameterSpec ivParameterSpec2 = new IvParameterSpec(iv2);
+		// get userB private key
+		KeyStore userBkeyStore= keySoreReader.readKeyStore(keyStoreFile1, keyStorePassForPrivateKeyB.toCharArray());
+		PrivateKey userBPrivateKey= keySoreReader.getPrivateKeyFromKeyStore(userBkeyStore, keyStoreAliasB, keyStorePassB.toCharArray());
+		Certificate userBCertificate= keySoreReader.getCertificateFromKeyStore(userBkeyStore, keyStoreAliasB);
+		PublicKey userBPublicKey= keySoreReader.getPublicKeyFromCertificate(userBCertificate);
 		
-		//initialization for decrypt
-		aesCipherDec.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec2);
+		// descryption secret key with userB private key
+		Cipher rsaCipherDec= Cipher.getInstance("RSA/ECB/PKCS1Padding");
+		rsaCipherDec.init(Cipher.DECRYPT_MODE, userBPrivateKey);
+		byte [] ssesionKeyDec= rsaCipherDec.doFinal(encSessionkey);	
 		
-		//decompress and decrypt subject
-		String decryptedSubjectText= new String(aesCipherDec.doFinal(Base64.decode(chosenMessage.getSubject())));
+		SecretKey secretKey= new SecretKeySpec(ssesionKeyDec, "AES");
+		
+		// initialization and descryption message body with secret key
+		Cipher bodyCipherDec= Cipher.getInstance("AES/CBC/PKCS5Padding");
+		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey,IV1);
+		byte [] receivedText= bodyCipherDec.doFinal(message);
+		
+		// decompression message body
+		String decompressedMessageText= GzipUtil.decompress(Base64.decode(new String(receivedText)));
+		
+		// decryption i decompression subject
+		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey, IV2);
+		String decryptedSubjectText= new String(bodyCipherDec.doFinal(Base64.decode(chosenMessage.getSubject())));
 		String decompressedSubjectText= GzipUtil.decompress(Base64.decode(decryptedSubjectText));
-		System.out.println("Subject text:"+new String(decompressedSubjectText));
 		
+		// print message
+		System.out.println("Subject: " + decompressedSubjectText);
+		System.out.println("Body: " + decompressedMessageText);
 	}
 }
+	
+		
+		
+		
+		
+		
+		 
+
+

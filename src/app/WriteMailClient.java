@@ -4,6 +4,7 @@ package app;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 
@@ -31,15 +32,16 @@ public class WriteMailClient extends MailClient {
 	private static final String KEY_FILE = "./data/session.key";
 	private static final String IV1_FILE = "./data/iv1.bin";
 	private static final String IV2_FILE = "./data/iv2.bin";
-	private static final String keyStoreFileA= ".data/usera.jks";
-	private static final String keyStoreFileB= ".data/userb.jks";
-	private static final String keyStorePassA= "usera";
-	private static final String keyStoreAAlias= "usera";
-	private static final String keyStoreBAlias= "userb";
-	private static final String keyStorePassForPrivateKeyA= "usera";
-	private static final String keyStorePassForPrivateKeyB= "userb";
+	private static final String keyStoreFileA= "./data/usera.jks";
+	private static final String keyStoreFileB= "./data/userb.jks";
+	private static final String keyStorePassA= "dunja";
+	private static final String keyStorePassB= "ilija";
+	private static final String keyStoreAAlias= "dunja";
+	private static final String keyStoreBAlias= "ilija";
+	private static final String keyStorePassForPrivateKeyA= "dunja";
+	private static final String keyStorePassForPrivateKeyB= "ilija";
 	private static KeyStoreReader keyStoreReader= new KeyStoreReader();
-	//private static MailBody mailBody= new MailBody();
+
 
 	
 	
@@ -70,48 +72,57 @@ public class WriteMailClient extends MailClient {
 			SecretKey secretKey = keyGen.generateKey();
 			Cipher aesCipherEnc = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			
-			//inicijalizacija za sifrovanje 
+			//initialization for body encryption 
 			IvParameterSpec ivParameterSpec1 = IVHelper.createIV();
+			byte [] iVP1= ivParameterSpec1.getIV(); // for mailbody
 			aesCipherEnc.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec1);
 			
 			
-			//sifrovanje
+			//encryption
 			byte[] ciphertext = aesCipherEnc.doFinal(compressedBody.getBytes());
 			String ciphertextStr = Base64.encodeToString(ciphertext);
-			System.out.println("Kriptovan tekst: " + ciphertextStr);
+			System.out.println("Crypted text: " + ciphertextStr);
 			
 			
-			//inicijalizacija za sifrovanje 
+			//initialization for subject encryption
 			IvParameterSpec ivParameterSpec2 = IVHelper.createIV();
+			byte [] iVP2= ivParameterSpec2.getIV(); // for mailbody
 			aesCipherEnc.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec2);
 			
+			//encryption
 			byte[] ciphersubject = aesCipherEnc.doFinal(compressedSubject.getBytes());
 			String ciphersubjectStr = Base64.encodeToString(ciphersubject);
-			System.out.println("Kriptovan subject: " + ciphersubjectStr);
+			System.out.println("Crypted subject: " + ciphersubjectStr);
 			
-			//fajl i lozinka za pristup se prosledjuju
-			KeyStore ks= keyStoreReader.readKeyStore(keyStoreFileA, keyStorePassA.toCharArray());
+			//file and password are forwarded
+			KeyStore ksA= keyStoreReader.readKeyStore(keyStoreFileB, keyStorePassB.toCharArray());
 			
-			//za korisnika B uzimamo sertifikat i javni kljuc
-			Certificate cB= keyStoreReader.getCertificateFromKeyStore(ks,keyStoreBAlias);
+			//for user B we take certificate and public key
+			Certificate cB= keyStoreReader.getCertificateFromKeyStore(ksA,keyStoreBAlias);
 			PublicKey pkB= keyStoreReader.getPublicKeyFromCertificate(cB);
+			PrivateKey privateB= keyStoreReader.getPrivateKeyFromKeyStore(ksA, keyStoreBAlias, keyStorePassB.toCharArray());
+			System.out.println("User B Certificate: "+ cB);
+			System.out.println("Userb B Public Key: " + pkB);
 			
-			//enkriptovanje session kljuca javnim kljucem od korisnika B
-			Cipher rsaChiperEnc= Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
 			
-			//enkripcija tajnim kljucem
+			//encrypted session key (with user B public key)
+			Cipher rsaChiperEnc= Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			
+			//encryption with secret key
 			rsaChiperEnc.init(Cipher.ENCRYPT_MODE, pkB);
 			
-			//kriptovanje
+			// encryption
 			byte[] encodedSecretKey= rsaChiperEnc.doFinal(secretKey.getEncoded());
-			System.out.println("Kriptovani tajni kljuc: " + Base64.encodeToString(encodedSecretKey));
+			//System.out.println("Crypted secret key: " + Base64.encodeToString(encodedSecretKey));
 			
-			//snimaju se bajtovi kljuca i IV.
+			//save key bytes and IV
 			JavaUtils.writeBytesToFilename(KEY_FILE, secretKey.getEncoded());
 			JavaUtils.writeBytesToFilename(IV1_FILE, ivParameterSpec1.getIV());
 			JavaUtils.writeBytesToFilename(IV2_FILE, ivParameterSpec2.getIV());
 			
-        	MimeMessage mimeMessage = MailHelper.createMimeMessage(reciever, ciphersubjectStr, ciphertextStr);
+			MailBody mailBody= new MailBody(ciphertext, iVP1, iVP2, encodedSecretKey);
+			
+        	MimeMessage mimeMessage = MailHelper.createMimeMessage(reciever, ciphersubjectStr, mailBody.toCSV());
         	MailWritter.sendMessage(service, "me", mimeMessage);
         	
         }catch (Exception e) {
