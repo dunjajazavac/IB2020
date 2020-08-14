@@ -44,15 +44,16 @@ public class ReadMailClient extends MailClient {
 	public static long PAGE_SIZE = 3;
 	public static boolean ONLY_FIRST_PAGE = true;
 	
-//	private static final String KEY_FILE = "./data/session.key";
-//	private static final String IV1_FILE = "./data/iv1.bin";
-//	private static final String IV2_FILE = "./data/iv2.bin";
+   
 	
 	public static KeyStoreReader keySoreReader= new KeyStoreReader();
 	private static final String keyStoreFile1="./data/userb.jks";
 	private static final String keyStorePassForPrivateKeyB= "ilija";
 	private static final String keyStoreAliasB= "ilija";
 	private static final String keyStorePassB= "ilija";
+	private static final String KEY_FILE = "./data/session.key";
+	private static final String IV1_FILE = "./data/iv1.bin";
+	private static final String IV2_FILE = "./data/iv2.bin";
 	
 	
 	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, MessagingException, NoSuchPaddingException, InvalidAlgorithmParameterException {
@@ -98,11 +99,13 @@ public class ReadMailClient extends MailClient {
 		MailBody mailBody= new MailBody(body);
 		
 		// take over vectors, encrypted key and body message
-		IvParameterSpec IV1= new IvParameterSpec(mailBody.getIV1Bytes());
-		IvParameterSpec IV2= new IvParameterSpec(mailBody.getIV2Bytes());
+
+		IvParameterSpec ivParametarSpec1= new IvParameterSpec(mailBody.getIV1Bytes());
+		IvParameterSpec IvParametarSpec2= new IvParameterSpec(mailBody.getIV2Bytes());
+		
 		byte [] message= mailBody.getEncMessageBytes();
 		byte [] encSessionkey= mailBody.getEncKeyBytes();
-		
+	
 		// get userB private key
 		KeyStore userBkeyStore= keySoreReader.readKeyStore(keyStoreFile1, keyStorePassForPrivateKeyB.toCharArray());
 		PrivateKey userBPrivateKey= keySoreReader.getPrivateKeyFromKeyStore(userBkeyStore, keyStoreAliasB, keyStorePassB.toCharArray());
@@ -118,20 +121,20 @@ public class ReadMailClient extends MailClient {
 		
 		// initialization and descryption message body with secret key
 		Cipher bodyCipherDec= Cipher.getInstance("AES/CBC/PKCS5Padding");
-		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey,IV1);
+		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey,ivParametarSpec1);
 		byte [] receivedText= bodyCipherDec.doFinal(message);
 		
 		// decompression message body
 		String decompressedMessageText= GzipUtil.decompress(Base64.decode(new String(receivedText)));
 		
 		// decryption i decompression subject
-		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey, IV2);
+		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey, IvParametarSpec2);
 		String decryptedSubjectText= new String(bodyCipherDec.doFinal(Base64.decode(chosenMessage.getSubject())));
 		String decompressedSubjectText= GzipUtil.decompress(Base64.decode(decryptedSubjectText));
 		
 		// print message
-		System.out.println("Subject: " + decompressedSubjectText);
-		System.out.println("Body: " + decompressedMessageText);
+		System.out.println("Decompressed subject: " + decompressedSubjectText);
+		System.out.println("Decompressed body: " + decompressedMessageText);
 	}
 }
 	
