@@ -1,14 +1,20 @@
 package support;
+import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 public class MailHelper {
 	/**
@@ -56,7 +62,7 @@ public class MailHelper {
         return null;
     }
     
-    public static MimeMessage createMimeMessage(String reciever,String subject, String  body) throws MessagingException {
+    public static MimeMessage createMimeMessage(String reciever,String subject, String  body, File file) throws MessagingException {
     	
     	Properties props = new Properties();
 	    Session session = Session.getDefaultInstance(props, null);
@@ -65,6 +71,16 @@ public class MailHelper {
     	message.setRecipient(Message.RecipientType.TO, new InternetAddress(reciever));
     	message.setSubject(subject);
     	message.setText(body);
+    	
+    	MimeBodyPart mimeBodyPart = new MimeBodyPart();
+        DataSource source = new FileDataSource(file);
+
+        mimeBodyPart.setDataHandler(new DataHandler(source));
+        mimeBodyPart.setFileName(file.getName());
+
+        Multipart multipart = new MimeMultipart();
+        multipart.addBodyPart(mimeBodyPart);
+        message.setContent(multipart);
     	
     	return message;
     }

@@ -95,9 +95,5 @@ public class VerifySignatureEnveloped {
 		} 
 	}
 	
-	public static void main(String[] args) {
-		VerifySignatureEnveloped verify = new VerifySignatureEnveloped();
-		verify.testIt();
-	}
 
 }

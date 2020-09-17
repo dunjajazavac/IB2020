@@ -199,8 +199,5 @@ public class AsymmetricKeyEncryption {
 		} 
 	}
 
-	public static void main(String[] args) {
-		AsymmetricKeyEncryption encrypt = new AsymmetricKeyEncryption();
-		encrypt.testIt();
-	}
+	
 }

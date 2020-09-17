@@ -30,10 +30,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Part;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.Node;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -51,6 +55,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
@@ -63,6 +68,9 @@ import util.Base64;
 import util.GzipUtil;
 import xml.crypto.AsymmetricKeyDecryption;
 import xml.crypto.AsymmetricKeyEncryption;
+import xml.crypto.CreateXmlDom;
+import xml.crypto.WriteEmailContent;
+import xml.signature.VerifySignatureEnveloped;
 
 public class ReadMailClient extends MailClient {
 
@@ -79,8 +87,9 @@ public class ReadMailClient extends MailClient {
 	private static final String KEY_FILE = "./data/session.key";
 	private static final String IV1_FILE = "./data/iv1.bin";
 	private static final String IV2_FILE = "./data/iv2.bin";
+	private static final String file= "./data/email_dec2.xml";
 	
-	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, MessagingException, NoSuchPaddingException, InvalidAlgorithmParameterException {
+	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, MessagingException, NoSuchPaddingException, InvalidAlgorithmParameterException, SAXException, ParserConfigurationException {
         // Build a new authorized API client service.
         Gmail service = getGmailService();
         ArrayList<MimeMessage> mimeMessages = new ArrayList<MimeMessage>();
@@ -117,51 +126,89 @@ public class ReadMailClient extends MailClient {
 	    Integer answer = Integer.parseInt(answerStr);
 	    
 		MimeMessage chosenMessage = mimeMessages.get(answer);
-		String body= MailHelper.getText(chosenMessage);
+		getAttachement(chosenMessage);
 		
-		// mailBody object
-		MailBody mailBody= new MailBody(body);
+		// file decryption
+		AsymmetricKeyDecryption akd= new AsymmetricKeyDecryption();
+		akd.testIt();
 		
-		// take over vectors, encrypted key and body message
-
-		IvParameterSpec ivParametarSpec1= new IvParameterSpec(mailBody.getIV1Bytes());
-		IvParameterSpec IvParametarSpec2= new IvParameterSpec(mailBody.getIV2Bytes());
-		
-		byte [] message= mailBody.getEncMessageBytes();
-		byte [] encSessionkey= mailBody.getEncKeyBytes();
-	
-		// get userB private key
-		KeyStore userBkeyStore= keySoreReader.readKeyStore(keyStoreFile1, keyStorePassForPrivateKeyB.toCharArray());
-		PrivateKey userBPrivateKey= keySoreReader.getPrivateKeyFromKeyStore(userBkeyStore, keyStoreAliasB, keyStorePassB.toCharArray());
-		Certificate userBCertificate= keySoreReader.getCertificateFromKeyStore(userBkeyStore, keyStoreAliasB);
-		PublicKey userBPublicKey= keySoreReader.getPublicKeyFromCertificate(userBCertificate);
-		
-		// descryption secret key with userB private key
-		Cipher rsaCipherDec= Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		rsaCipherDec.init(Cipher.DECRYPT_MODE, userBPrivateKey);
-		byte [] ssesionKeyDec= rsaCipherDec.doFinal(encSessionkey);	
-		
-		SecretKey secretKey= new SecretKeySpec(ssesionKeyDec, "AES");
-		
-		// initialization and descryption message body with secret key
-		Cipher bodyCipherDec= Cipher.getInstance("AES/CBC/PKCS5Padding");
-		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey,ivParametarSpec1);
-		byte [] receivedText= bodyCipherDec.doFinal(message);
-		
-		// decompression message body
-		String decompressedMessageText= GzipUtil.decompress(Base64.decode(new String(receivedText)));
-		
-		// decryption i decompression subject
-		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey, IvParametarSpec2);
-		String decryptedSubjectText= new String(bodyCipherDec.doFinal(Base64.decode(chosenMessage.getSubject())));
-		String decompressedSubjectText= GzipUtil.decompress(Base64.decode(decryptedSubjectText));
+		// signature check
+		VerifySignatureEnveloped vse= new VerifySignatureEnveloped();
+		vse.testIt();
 		
 		// print message
-		System.out.println("Decompressed subject: " + decompressedSubjectText);
-		System.out.println("Decompressed body: " + decompressedMessageText);
+		System.out.println("\nEmail");
+		WriteEmailContent.writeEmailContent(file);
 		
-		AsymmetricKeyEncryption ake= new AsymmetricKeyEncryption();
-		ake.main(args);
+		
+//		
+//		// mailBody object
+//		MailBody mailBody= new MailBody(body);
+//		
+//		// take over vectors, encrypted key and body message
+//
+//		IvParameterSpec ivParametarSpec1= new IvParameterSpec(mailBody.getIV1Bytes());
+//		IvParameterSpec IvParametarSpec2= new IvParameterSpec(mailBody.getIV2Bytes());
+//		
+//		byte [] message= mailBody.getEncMessageBytes();
+//		byte [] encSessionkey= mailBody.getEncKeyBytes();
+//	
+//		// get userB private key
+//		KeyStore userBkeyStore= keySoreReader.readKeyStore(keyStoreFile1, keyStorePassForPrivateKeyB.toCharArray());
+//		PrivateKey userBPrivateKey= keySoreReader.getPrivateKeyFromKeyStore(userBkeyStore, keyStoreAliasB, keyStorePassB.toCharArray());
+//		Certificate userBCertificate= keySoreReader.getCertificateFromKeyStore(userBkeyStore, keyStoreAliasB);
+//		PublicKey userBPublicKey= keySoreReader.getPublicKeyFromCertificate(userBCertificate);
+//		
+//		// descryption secret key with userB private key
+//		Cipher rsaCipherDec= Cipher.getInstance("RSA/ECB/PKCS1Padding");
+//		rsaCipherDec.init(Cipher.DECRYPT_MODE, userBPrivateKey);
+//		byte [] ssesionKeyDec= rsaCipherDec.doFinal(encSessionkey);	
+//		
+//		SecretKey secretKey= new SecretKeySpec(ssesionKeyDec, "AES");
+//		
+//		// initialization and descryption message body with secret key
+//		Cipher bodyCipherDec= Cipher.getInstance("AES/CBC/PKCS5Padding");
+//		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey,ivParametarSpec1);
+//		byte [] receivedText= bodyCipherDec.doFinal(message);
+//		
+//		// decompression message body
+//		String decompressedMessageText= GzipUtil.decompress(Base64.decode(new String(receivedText)));
+//		
+//		// decryption i decompression subject
+//		bodyCipherDec.init(Cipher.DECRYPT_MODE,secretKey, IvParametarSpec2);
+//		String decryptedSubjectText= new String(bodyCipherDec.doFinal(Base64.decode(chosenMessage.getSubject())));
+//		String decompressedSubjectText= GzipUtil.decompress(Base64.decode(decryptedSubjectText));
+//		
+//		// print message
+//		System.out.println("Decompressed subject: " + decompressedSubjectText);
+//		System.out.println("Decompressed body: " + decompressedMessageText);
+//		
+//		
+		
+		
+		
+	}
+	
+	public static void getAttachement(MimeMessage message) throws MessagingException, IOException {
+		String contentType = message.getContentType();
+		 
+		if (contentType.contains("multipart")) {
+		    // this message may contain attachment
+			Multipart multiPart = (Multipart) message.getContent();
+			for (int i = 0; i < multiPart.getCount(); i++) {
+			    MimeBodyPart mimeBodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+			    if (Part.ATTACHMENT.equalsIgnoreCase(mimeBodyPart.getDisposition())) {
+			        // this part is attachment
+			    	// save an attachment from a MimeBodyPart to a file
+			    	String destFilePath = "./data/";
+			    	mimeBodyPart.saveFile(destFilePath+mimeBodyPart.getFileName());
+			    	System.out.print("Fajl je uspesno sacuvan.\n");
+			    } else {
+			    	System.out.print("Greska.");
+			    }
+			}
+
+		}
 	}
 }
 	

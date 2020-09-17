@@ -48,7 +48,7 @@ public class AsymmetricKeyDecryption {
 
 		// snima se dokument
 		saveDocument(doc, OUT_FILE);
-		System.out.println("Encryption done");
+		System.out.println("Decryption done");
 	}
 
 	/**
@@ -145,8 +145,5 @@ public class AsymmetricKeyDecryption {
 		}
 	}
 
-	public static void main(String[] args) {
-		AsymmetricKeyDecryption decrypt = new AsymmetricKeyDecryption();
-		decrypt.testIt();
-	}
+	
 }
