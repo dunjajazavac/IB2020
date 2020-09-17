@@ -1,52 +1,39 @@
-package crypto;
+package xml.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.xml.security.encryption.EncryptedData;
 import org.apache.xml.security.encryption.EncryptedKey;
 import org.apache.xml.security.encryption.XMLCipher;
-import org.apache.xml.security.encryption.XMLEncryptionException;
 import org.apache.xml.security.keys.KeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 //Generise tajni kljuc
 //Kriptije sadrzaj elementa student tajnim kljucem
 //Kriptuje tajni kljuc javnim kljucem
 //Kriptovani tajni kljuc se stavlja kao KeyInfo kriptovanog elementa
 public class AsymmetricKeyEncryption {
-	private static final String IN_FILE = "./data/user1.xml";
-	private static final String OUT_FILE = "./data/user1_enc2.xml";
+	private static final String IN_FILE = "./data/email.xml";
+	private static final String OUT_FILE = "./data/email_enc2.xml";
 	private static final String KEY_STORE_FILE = "./data/primer.jks";
 
 	static {
@@ -88,19 +75,10 @@ public class AsymmetricKeyEncryption {
 			Document document = db.parse(new File(file));
 
 			return document;
-		} catch (FactoryConfigurationError e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-			return null;
-		} catch (SAXException e) {
-			e.printStackTrace();
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
+		} 
 	}
 
 	/**
@@ -120,25 +98,10 @@ public class AsymmetricKeyEncryption {
 			} else
 				return null;
 
-		} catch (KeyStoreException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
-		} catch (NoSuchProviderException e) {
-			e.printStackTrace();
-			return null;
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-			return null;
-		} catch (CertificateException e) {
-			e.printStackTrace();
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
+		} 
 	}
 
 	/**
@@ -159,21 +122,9 @@ public class AsymmetricKeyEncryption {
 
 			f.close();
 
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} catch (TransformerConfigurationException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (TransformerFactoryConfigurationError e) {
-			e.printStackTrace();
-		} catch (TransformerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		} 
 	}
 
 	/**
@@ -233,20 +184,19 @@ public class AsymmetricKeyEncryption {
 			encryptedData.setKeyInfo(keyInfo);
 
 			// trazi se element ciji sadrzaj se kriptuje
-			NodeList odseci = doc.getElementsByTagName("odsek");
-			Element odsek = (Element) odseci.item(0);
+			NodeList emailovi = doc.getElementsByTagName("email");
+			Element email = (Element) emailovi.item(0);
+			
+			
 
-			xmlCipher.doFinal(doc, odsek, true); // kriptuje sa sadrzaj
+			xmlCipher.doFinal(doc, doc.getDocumentElement(), true); // kriptuje sa sadrzaj
 
 			return doc;
 
-		} catch (XMLEncryptionException e) {
-			e.printStackTrace();
-			return null;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
-		}
+		} 
 	}
 
 	public static void main(String[] args) {

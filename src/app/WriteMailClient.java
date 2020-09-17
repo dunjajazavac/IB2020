@@ -2,20 +2,52 @@ package app;
 
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.net.ssl.KeyStoreBuilderParameters;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
+import org.apache.xml.security.encryption.EncryptedData;
+import org.apache.xml.security.encryption.EncryptedKey;
+import org.apache.xml.security.encryption.XMLCipher;
+import org.apache.xml.security.keys.KeyInfo;
+import org.apache.xml.security.signature.XMLSignature;
+import org.apache.xml.security.transforms.Transforms;
+import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.JavaUtils;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.google.api.services.gmail.Gmail;
 
@@ -24,6 +56,9 @@ import model.mailclient.MailBody;
 import util.Base64;
 import util.GzipUtil;
 import util.IVHelper;
+import xml.crypto.AsymmetricKeyDecryption;
+import xml.signature.SignEnveloped;
+import xml.signature.VerifySignatureEnveloped;
 import support.MailHelper;
 import support.MailWritter;
 
@@ -39,14 +74,12 @@ public class WriteMailClient extends MailClient {
 	private static final String keyStoreAAlias= "dunja";
 	private static final String keyStoreBAlias= "ilija";
 	private static final String keyStorePassForPrivateKeyA= "dunja";
-	private static final String keyStorePassForPrivateKeyB= "ilija";
+	private static final String keyStorePassForPrivateKeyB= "ilija"; 
 	private static KeyStoreReader keyStoreReader= new KeyStoreReader();
 
 
 	
-	
-	
-	public static void main(String[] args) {
+public static void main(String[] args) {
 		
         try {
         	Gmail service = getGmailService();
@@ -125,8 +158,22 @@ public class WriteMailClient extends MailClient {
         	MimeMessage mimeMessage = MailHelper.createMimeMessage(reciever, ciphersubjectStr, mailBody.toCSV());
         	MailWritter.sendMessage(service, "me", mimeMessage);
         	
+        	SignEnveloped se= new SignEnveloped();
+        	se.main(args);
+        	VerifySignatureEnveloped vse= new VerifySignatureEnveloped();
+        	vse.main(args);
+        	AsymmetricKeyDecryption akd= new AsymmetricKeyDecryption();
+        	akd.main(args);
+        	
         }catch (Exception e) {
         	e.printStackTrace();
 		}
 	}
+	
+	
+
+
+
+	
+
 }

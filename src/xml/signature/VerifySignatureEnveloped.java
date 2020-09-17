@@ -1,41 +1,34 @@
-package signature;
+package xml.signature;
 
 import java.io.File;
-import java.io.IOException;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.xml.security.exceptions.XMLSecurityException;
 import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.keys.keyresolver.implementations.RSAKeyValueResolver;
 import org.apache.xml.security.keys.keyresolver.implementations.X509CertificateResolver;
 import org.apache.xml.security.signature.XMLSignature;
-import org.apache.xml.security.signature.XMLSignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-// vrsi proveru potpisa
+//Vrsi proveru potpisa
 public class VerifySignatureEnveloped {
 	
-
-	private static final String IN_FILE = "./data/userSigned.xml";
+	private static final String IN_FILE = "./data/email_signed1.xml";
 	
     static {
     	//staticka inicijalizacija
         Security.addProvider(new BouncyCastleProvider());
         org.apache.xml.security.Init.init();
     }
-    
-    public void testIt() {
+	
+	public void testIt() {
 		//ucitava se dokument
 		Document doc = loadDocument(IN_FILE);
 		
@@ -43,8 +36,8 @@ public class VerifySignatureEnveloped {
 		boolean res = verifySignature(doc);
 		System.out.println("Verification = " + res);
 	}
-    
-    /**
+	
+	/**
 	 * Kreira DOM od XML dokumenta
 	 */
 	private Document loadDocument(String file) {
@@ -55,16 +48,7 @@ public class VerifySignatureEnveloped {
 			Document document = db.parse(new File(file));
 
 			return document;
-		} catch (FactoryConfigurationError e) {
-			e.printStackTrace();
-			return null;
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-			return null;
-		} catch (SAXException e) {
-			e.printStackTrace();
-			return null;
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -105,20 +89,15 @@ public class VerifySignatureEnveloped {
 			else
 				return false;
 		
-		} catch (XMLSignatureException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
-		} catch (XMLSecurityException e) {
-			e.printStackTrace();
-			return false;
-		}
+		} 
 	}
 	
 	public static void main(String[] args) {
 		VerifySignatureEnveloped verify = new VerifySignatureEnveloped();
 		verify.testIt();
 	}
-	
-	
 
 }

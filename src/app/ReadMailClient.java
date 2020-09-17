@@ -2,10 +2,15 @@
 package app;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -13,6 +18,7 @@ import java.security.PublicKey;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,9 +31,26 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.xml.crypto.dsig.keyinfo.KeyInfo;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.soap.Node;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
+import org.apache.xml.security.encryption.XMLCipher;
+import org.apache.xml.security.keys.keyresolver.implementations.RSAKeyValueResolver;
+import org.apache.xml.security.keys.keyresolver.implementations.X509CertificateResolver;
+import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.utils.JavaUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
@@ -38,6 +61,8 @@ import support.MailHelper;
 import support.MailReader;
 import util.Base64;
 import util.GzipUtil;
+import xml.crypto.AsymmetricKeyDecryption;
+import xml.crypto.AsymmetricKeyEncryption;
 
 public class ReadMailClient extends MailClient {
 
@@ -54,7 +79,6 @@ public class ReadMailClient extends MailClient {
 	private static final String KEY_FILE = "./data/session.key";
 	private static final String IV1_FILE = "./data/iv1.bin";
 	private static final String IV2_FILE = "./data/iv2.bin";
-	
 	
 	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, MessagingException, NoSuchPaddingException, InvalidAlgorithmParameterException {
         // Build a new authorized API client service.
@@ -135,6 +159,9 @@ public class ReadMailClient extends MailClient {
 		// print message
 		System.out.println("Decompressed subject: " + decompressedSubjectText);
 		System.out.println("Decompressed body: " + decompressedMessageText);
+		
+		AsymmetricKeyEncryption ake= new AsymmetricKeyEncryption();
+		ake.main(args);
 	}
 }
 	
