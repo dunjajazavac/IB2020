@@ -17,6 +17,7 @@ import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Dictionary;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -58,7 +59,6 @@ import util.GzipUtil;
 import util.IVHelper;
 import xml.crypto.AsymmetricKeyDecryption;
 import xml.crypto.AsymmetricKeyEncryption;
-import xml.crypto.CreateXmlDom;
 import xml.signature.SignEnveloped;
 import xml.signature.VerifySignatureEnveloped;
 import support.MailHelper;
@@ -104,7 +104,7 @@ public static void main(String[] args) {
             String body = reader.readLine();
             
             //kreiran xml fajl koji sadrzi subject i body
-            CreateXmlDom.createXML(subject, body);
+            createXML(subject, body);
             
 
             //potpisivanje fajla
@@ -116,13 +116,15 @@ public static void main(String[] args) {
             AsymmetricKeyEncryption ake = new AsymmetricKeyEncryption();
     		ake.testIt();
     		
+    		
 
     		File file = new File(emailFile);
             
             //slanje
     		MimeMessage mimeMessage = MailHelper.createMimeMessage(reciever, "", "", file);
         	MailWritter.sendMessage(service, "me", mimeMessage);
-            
+        	
+       
             
             
             
@@ -201,7 +203,52 @@ public static void main(String[] args) {
       }catch (Exception e) {
       	e.printStackTrace();
 	}
+        
+
+    
  }
+
+public static void createXML(String subj, String body){
+	final String xmlFilePath = "./data/email.xml";
+
+	DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+	 
+    DocumentBuilder documentBuilder;
+     
+    try {
+    	documentBuilder = documentBuilderFactory.newDocumentBuilder();
+    	Document document = documentBuilder.newDocument();
+    	
+    	Element root = document.createElement("email");
+    	document.appendChild(root);
+         
+    	Element subject = document.createElement("subject");
+    	root.appendChild(subject);
+    	subject.setTextContent(subj);
+    	
+    	Element telo = document.createElement("body");
+    	root.appendChild(telo);
+    	telo.setTextContent(body);
+		
+		 
+		Transformer transformer = TransformerFactory.newInstance().newTransformer();
+		transformer.setOutputProperty(OutputKeys.INDENT, "yes"); 
+	    DOMSource domSource = new DOMSource(document);
+		 
+		     
+	    StreamResult streamResult = new StreamResult(new File(xmlFilePath));
+	    transformer.transform(domSource, streamResult);
+		     
+		 
+		System.out.println("Sacuvan fajl!");
+		System.out.println("\nXml dom je uspesno kreiran!");
+
+		
+
+    } catch (Exception e) {
+         e.printStackTrace();
+    }
+}
 	
 	
 

@@ -38,7 +38,6 @@ import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.soap.Node;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -53,6 +52,7 @@ import org.apache.xml.security.utils.JavaUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -68,8 +68,6 @@ import util.Base64;
 import util.GzipUtil;
 import xml.crypto.AsymmetricKeyDecryption;
 import xml.crypto.AsymmetricKeyEncryption;
-import xml.crypto.CreateXmlDom;
-import xml.crypto.WriteEmailContent;
 import xml.signature.VerifySignatureEnveloped;
 
 public class ReadMailClient extends MailClient {
@@ -138,7 +136,9 @@ public class ReadMailClient extends MailClient {
 		
 		// print message
 		System.out.println("\nEmail");
-		WriteEmailContent.writeEmailContent(file);
+		writeEmailContent(file);
+		
+		
 		
 		
 //		
@@ -188,6 +188,30 @@ public class ReadMailClient extends MailClient {
 		
 		
 	}
+	
+	public static void writeEmailContent(String path) throws SAXException, IOException, ParserConfigurationException {
+		try {
+		File file = new File("./data/email_dec2.xml");
+		
+		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();  
+		DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();  
+		Document document = documentBuilder.parse(file);  
+		document.getDocumentElement().normalize();  
+		NodeList s = document.getElementsByTagName("subject");
+		Node subj = s.item(0);
+		
+		NodeList b = document.getElementsByTagName("body");
+		Node body = b.item(0);
+		
+		System.out.print("\nSubject: " + subj.getTextContent());
+		System.out.print("\nBody: " + body.getTextContent());
+		
+		}catch (Exception e) {
+		         e.printStackTrace();
+		    }
+		}
+
+		
 	
 	public static void getAttachement(MimeMessage message) throws MessagingException, IOException {
 		String contentType = message.getContentType();

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><email>
-<subject>proba</subject>
-<body>proba</body>
+<subject>pokusaj</subject>
+<body>pokusaj</body>
 <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
 <ds:SignedInfo>
 <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
@@ -11,15 +11,15 @@
 <ds:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>
 </ds:Transforms>
 <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
-<ds:DigestValue>ypRQW/Uzmh9z+14dD/N/Ng30BT0=</ds:DigestValue>
+<ds:DigestValue>qzXiHgn1K7/GVy41oaNydjuw0q8=</ds:DigestValue>
 </ds:Reference>
 </ds:SignedInfo>
 <ds:SignatureValue>
-WSwdn1hB3EZsDh93WvY5iYnxmmq7SGeEbHJIYZijVdl2Z4d7WtN5LYDR2o1WxetHYo9syW2jH2gT
-9+IjdpvUNJOLqmZB7o7ns92U+NUIYHlMlpaYNQNFkvEvZKSNG9q8TYjeBqQOg2xMBf36Ir/+0ExM
-K4iRE4glSQ6D45VP0sUmR1gXiqEuvfZud0JmPd/o4GNUZbVbIySJEYfiRIoQyBnp8YM81au8Btgt
-V0AG8YfEVzeGfwad1u45wMK9oaV1o30m6gRdLap0n5RbjHrwojP9HZj2WbjlcFr3TvOqT+fpWmEw
-LuTNKWYnw5qkaLYs4h7OB1uNSLxS8D3i08ViUQ==
+grps7FBq9kRxcfKKeralqVItw7XtKtWIOzcXWNGzO5VSwSe+fwt3X7N4uY70bRwey/C0s6X7/MCU
+TpQpp+/nH8Vr1woOtATZjjyKkOPEw0s+5x3gGOChfYKuUmWNtbCbSpsGouETebTehRxSVAvVMxaa
+29xswVaQL1wPOAJEa9EXKswq+MQNHguaeqIX9gA8uOCHLV4/9i8pRM38Q75uPhB7Q9VV+LQ6rN3S
+h6UrCYG3xgqT6uNyz01CrU156gIbbgElGqofNsn8LEBd7oVO2NUlGMcetGrYEGoMDNp6AXXn9Mw2
+2R7opPNo4NrWBRCZ14UJ+WQW9imDw7Su0gXFIQ==
 </ds:SignatureValue>
 <ds:KeyInfo>
 <ds:KeyValue>
